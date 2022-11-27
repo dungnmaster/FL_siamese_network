@@ -16,10 +16,6 @@ import torchvision.datasets as dset
 import torch.multiprocessing
 from facenet_pytorch import MTCNN, InceptionResnetV1
 
-
-import medmnist
-from medmnist import INFO
-
 download = True
 sharing_strategy = "file_system"
 torch.multiprocessing.set_sharing_strategy(sharing_strategy)
@@ -135,8 +131,8 @@ class DataSetFactory:
             while(second == first):
                 second = random.randrange(0, max_range)
             data.append(img[first * 10 : first * 10 + 10])
-            data[0][0] = img[second * 10 : second * 10 + 2]
-            data[0][1] = img[second * 10 : second * 10 + 7]
+            data[0][0] = img[second][2]
+            data[0][1] = img[second][7]
             random.shuffle(data[0])
         return data
             

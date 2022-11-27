@@ -291,6 +291,7 @@ class LocalModel(object):
 
 
 
-
-global_model = GlobalModel(6,'6_peers_iid','iid')
+num_peers = sys.argv[1]
+print("Starting network for num peers: "+num_peers)
+global_model = GlobalModel(num_peers,str(num_peers)+'_peers_iid','iid')
 global_model.start_global_train()

@@ -97,9 +97,9 @@ class DataSetFactory:
 
 
         # make it 500 100 200
-        self.num_train = 200
+        self.num_train = 250
         self.num_valid = 10
-        self.num_test = 30
+        self.num_test = 50
 
         print('training size %d :validate size %d : test size %d' % (
             self.num_train, self.num_valid, self.num_test))
@@ -108,24 +108,26 @@ class DataSetFactory:
         test = olivetti_faces_dataset(images=test_data, transforms=transforms, size=self.num_test, resnet=resnet, device=device)
         validate = olivetti_faces_dataset(images=validate_data, transforms=transforms, size=self.num_valid, resnet=resnet, device=device)
 
-        self.train_loader = DataLoader(training, batch_size=Config.batch_size, shuffle=True, worker_init_fn=set_worker_sharing_strategy)
-        self.valid_loader = DataLoader(validate, batch_size=Config.batch_size, shuffle=True, worker_init_fn=set_worker_sharing_strategy)
-        self.test_loader = DataLoader(test, batch_size=Config.batch_size, shuffle=True, worker_init_fn=set_worker_sharing_strategy)
+        self.train_loader = DataLoader(training, batch_size=Config.batch_size, shuffle=True)
+        self.valid_loader = DataLoader(validate, batch_size=Config.batch_size, shuffle=True)
+        self.test_loader = DataLoader(test, batch_size=Config.batch_size, shuffle=True)
 
     def split_train_data(self, type, img, max_range):
         data = []
         if(type == 'iid'):
+            print('creating IID dataset')
             first = random.randrange(0, max_range)
             second = first
             third = first
             while(second == first):
                 second = random.randrange(0, max_range)
-            while(third == first):
+            while(third == first or third == second):
                 third = random.randrange(0, max_range)
             data.append(img[first * 10 : first * 10 + 10])
             data.append(img[second * 10 : second * 10 + 10])
             data.append(img[third * 10 : third * 10 + 10])
         else:
+            print('creating non-IID dataset')
             first = random.randrange(0, max_range)
             second = first
             while(second == first):
@@ -144,6 +146,23 @@ class olivetti_faces_dataset(Dataset):
         self.size = size
         self.resnet = resnet
         self.device = device
+        self.pairs = []
+
+        for idx in range(self.size):
+            class_1, img1, class_2, img2, label = None, None, None, None, None
+            if idx % 2 == 0:  # same img
+                label = 1
+                class_1 = class_2 = random.randrange(0, len(self.data))
+                img1 = random.randrange(0, 10)
+                img2 = random.randrange(0, 10)
+
+            else:
+                label = 0
+                class_1 = random.randrange(0, len(self.data))
+                img1 = random.randrange(0, 10)
+                class_2 = random.randrange(0, len(self.data))
+                img2 = random.randrange(0, 10)
+            self.pairs.append([class_1,img1,class_1,img2,label])
 
     def __len__(self):
         return self.size
@@ -157,18 +176,10 @@ class olivetti_faces_dataset(Dataset):
 
     def __getitem__(self, idx):
         img1, img2, label = None, None, None
-        if idx % 2 == 0:  # same img
-            label = 1
-            n = random.randrange(0, len(self.data))
-            img1 = self.data[n][random.randrange(0, 10)]
-            img2 = self.data[n][random.randrange(0, 10)]
 
-        else:
-            label = 0
-            n = random.randrange(0, len(self.data))
-            img1 = self.data[n][random.randrange(0, 10)]
-            n = random.randrange(0, len(self.data))
-            img2 = self.data[n][random.randrange(0, 10)]
+        img1 = self.data[self.pairs[idx][0]][self.pairs[idx][1]]
+        img2 = self.data[self.pairs[idx][2]][self.pairs[idx][3]]
+        label = self.pairs[idx][4]
 
         img1_embedding = self.embedding(img1)
         img2_embedding = self.embedding(img2)

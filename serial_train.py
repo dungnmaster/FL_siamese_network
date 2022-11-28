@@ -20,8 +20,8 @@ import modelnet
 import datasource
 from statistics import mean
 
-NUM_GLOBAL_ROUNDS = 2
-NUM_LOCAL_EPOCHS = 10 # at each local node
+NUM_GLOBAL_ROUNDS = 10
+NUM_LOCAL_EPOCHS = 5 # at each local node
 NUM_TEST_EPOCH = 4
 
 #training variables  -------------
@@ -94,12 +94,17 @@ class GlobalModel(object):
             n = self.num_nodes
             for lm in self.local_models:
                 total_size += lm.x_train
+
+
+            # print('BEFORE', self.local_models[0].current_weights)
+            # print('BEFORE _direct', self.local_models[0].model.state_dict())
             for k in global_dict.keys():
                 global_dict[k] = torch.stack([self.local_models[i].current_weights[k].float()*(n*self.local_models[i].x_train/total_size) for i in range(n)], 0).mean(0)
             # for lm in self.local_models:
             #     lm.model.load_state_dict(global_dict)
             #     lm.current_weights = global_dict
             self.aggregated_weight = global_dict
+            # print('AFTER', self.aggregated_weight)
             agg_end = datetime.datetime.now()
             self.total_train_time += (agg_end-agg_start).seconds
 
@@ -295,5 +300,5 @@ num_peers = sys.argv[1]
 print("Starting network for num peers: "+num_peers)
 # global_model = GlobalModel(int(num_peers),str(num_peers)+'_peers_iid','iid')
 # global_model.start_global_train()
-global_model = GlobalModel(int(num_peers),str(num_peers)+'_peers_non_iid','non-iid')
+global_model = GlobalModel(int(num_peers),str(num_peers)+'_peers_iid','iid')
 global_model.start_global_train()
